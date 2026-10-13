@@ -1,0 +1,381 @@
+<!doctype html>
+<html lang="th">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light" />
+    <link rel="icon" type="image/png" href="./assets/logo-DpwLmXN6.png" />
+    <title>Digital NP Studio</title>
+    <script src="./web-bridge.js?v=20261012-live-chat-panel1"></script>
+    <script>
+      (() => {
+        const ensureStyle = () => {
+          if (document.getElementById('np-notify-style')) return;
+          const style = document.createElement('style');
+          style.id = 'np-notify-style';
+          style.textContent = `
+            .np-toast-host{position:fixed;z-index:99999;top:24px;left:50%;display:grid;gap:10px;width:min(460px,calc(100vw - 28px));transform:translateX(-50%);pointer-events:none}
+            .np-toast{display:grid;gap:5px;padding:16px 18px;border:1px solid rgba(23,200,255,.48);border-radius:16px;background:linear-gradient(135deg,rgba(7,18,32,.98),rgba(10,30,54,.98));box-shadow:0 26px 90px rgba(0,0,0,.42),inset 0 1px rgba(255,255,255,.08);opacity:0;transform:translateY(-14px) scale(.98);transition:opacity .22s ease,transform .22s ease;pointer-events:auto}
+            .np-toast.show{opacity:1;transform:translateY(0) scale(1)}
+            .np-toast strong{color:#ffcf45;font-size:13px;letter-spacing:.4px}
+            .np-toast span{color:#f3f8ff;line-height:1.55}
+            .np-toast.success{border-color:rgba(52,230,168,.58)}.np-toast.success strong{color:#70f4bc}
+            .np-toast.warning{border-color:rgba(255,207,69,.65)}
+            .np-toast.danger{border-color:rgba(255,122,122,.62);background:linear-gradient(135deg,rgba(40,9,17,.98),rgba(7,18,32,.98))}.np-toast.danger strong{color:#ffb0b0}
+            .np-confirm-backdrop{position:fixed;inset:0;z-index:99998;display:grid;place-items:center;padding:22px;background:rgba(1,5,12,.72);backdrop-filter:blur(8px);opacity:0;transition:opacity .18s ease}
+            .np-confirm-backdrop.show{opacity:1}
+            .np-confirm-card{width:min(540px,100%);padding:26px;border:1px solid rgba(23,200,255,.46);border-radius:18px;background:linear-gradient(140deg,#0c1b2d,#070d18 58%,rgba(57,36,4,.94));box-shadow:0 28px 100px rgba(0,0,0,.55),inset 0 1px rgba(255,255,255,.06);color:#f4f8ff;transform:translateY(10px) scale(.98);transition:transform .18s ease}
+            .np-confirm-backdrop.show .np-confirm-card{transform:translateY(0) scale(1)}
+            .np-confirm-kicker{display:inline-flex;margin-bottom:10px;color:#ffcf45;font-size:12px;font-weight:850;letter-spacing:0;text-transform:none}
+            .np-confirm-card h2{margin:0 0 10px;font-size:24px}.np-confirm-card p{margin:0;color:#bed0ea;line-height:1.65}
+            .np-confirm-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:24px}
+            .np-confirm-actions button{min-width:116px;border:1px solid rgba(113,156,217,.4);border-radius:12px;padding:11px 16px;background:#102138;color:#f4f8ff;font:inherit;font-weight:800;cursor:pointer}
+            .np-confirm-actions .primary{border-color:rgba(255,190,24,.85);background:linear-gradient(135deg,#0a7cff,#075be8 62%,#ff8a00);color:white}
+          `;
+          document.head.append(style);
+        };
+        const ensureHost = () => {
+          ensureStyle();
+          let host = document.querySelector('.np-toast-host');
+          if (!host) {
+            host = document.createElement('div');
+            host.className = 'np-toast-host';
+            document.body.append(host);
+          }
+          return host;
+        };
+        window.npNotify = (message, options = {}) => {
+          const host = ensureHost();
+          if (host.querySelector('.np-toast')) return;
+          const tone = options.tone || 'info';
+          const item = document.createElement('div');
+          item.className = 'np-toast ' + tone;
+          const title = document.createElement('strong');
+          title.textContent = options.title || (tone === 'success' ? 'สำเร็จ' : tone === 'danger' ? 'แจ้งเตือน' : 'NP Studio');
+          const body = document.createElement('span');
+          body.textContent = String(message || '');
+          item.append(title, body);
+          host.append(item);
+          requestAnimationFrame(() => item.classList.add('show'));
+          window.setTimeout(() => {
+            item.classList.remove('show');
+            window.setTimeout(() => item.remove(), 240);
+          }, options.timeout || 3400);
+        };
+        window.npConfirm = ({title = 'ยืนยันรายการ', message = '', confirmText = 'ยืนยัน', cancelText = 'ยกเลิก'} = {}) => new Promise(resolve => {
+          ensureStyle();
+          const wrap = document.createElement('div');
+          wrap.className = 'np-confirm-backdrop';
+          const card = document.createElement('section');
+          card.className = 'np-confirm-card';
+          card.setAttribute('role', 'dialog');
+          card.setAttribute('aria-modal', 'true');
+          card.innerHTML = `<span class="np-confirm-kicker">ยืนยันการทำงาน</span><h2></h2><p></p><div class="np-confirm-actions"><button type="button" data-cancel></button><button class="primary" type="button" data-ok></button></div>`;
+          card.querySelector('h2').textContent = title;
+          card.querySelector('p').textContent = message;
+          card.querySelector('[data-cancel]').textContent = cancelText;
+          card.querySelector('[data-ok]').textContent = confirmText;
+          wrap.append(card);
+          const close = value => {
+            wrap.classList.remove('show');
+            window.setTimeout(() => wrap.remove(), 180);
+            resolve(value);
+          };
+          card.querySelector('[data-cancel]').onclick = () => close(false);
+          card.querySelector('[data-ok]').onclick = () => close(true);
+          wrap.onclick = e => { if (e.target === wrap) close(false); };
+          document.body.append(wrap);
+          requestAnimationFrame(() => wrap.classList.add('show'));
+          card.querySelector('[data-ok]').focus();
+        });
+        window.alert = message => window.npNotify(message, {tone:'warning'});
+      })();
+    </script>
+    <script>
+      (() => {
+        const RAW_KEY = 'rerun.accounts';
+        const USER_KEY = 'np.active.username';
+        try { sessionStorage.removeItem('np.blank.recovered.at'); } catch {}
+        const originalGet = localStorage.getItem.bind(localStorage);
+        const originalSet = localStorage.setItem.bind(localStorage);
+        const originalRemove = localStorage.removeItem.bind(localStorage);
+        const cleanUser = value => String(value || '').trim().toLowerCase().replace(/[^a-z0-9_.-]/g, '');
+        const scopedKey = user => user ? `${RAW_KEY}.user.${user}` : '';
+        const activeUser = () => cleanUser(window.__npActiveUsername || originalGet(USER_KEY) || '');
+        const switchToUser = (value, options = {}) => {
+          const previous = activeUser();
+          const next = setActiveUser(value);
+          if (options.reload && next && previous && previous !== next && !window.__npSessionReloading) {
+            window.__npSessionReloading = true;
+            try { sessionStorage.setItem('np.session.switch.reason', `user:${previous}->${next}`); } catch {}
+            window.setTimeout(() => location.replace(location.pathname + location.search + location.hash), 50);
+          }
+          return next;
+        };
+        const setActiveUser = value => {
+          const user = cleanUser(value);
+          if (user) originalSet(USER_KEY, user);
+          else originalRemove(USER_KEY);
+          window.__npActiveUsername = user;
+          return user;
+        };
+        const RESET_MARKER = 'np.reset.work-data.20261008';
+        try {
+          if (originalGet(RESET_MARKER) !== 'done') {
+            originalRemove(RAW_KEY);
+            for (let i = localStorage.length - 1; i >= 0; i -= 1) {
+              const key = localStorage.key(i);
+              if (key && key.startsWith(`${RAW_KEY}.user.`)) originalRemove(key);
+            }
+            sessionStorage.removeItem('np.session.switch.reason');
+            originalSet(RESET_MARKER, 'done');
+          }
+        } catch {}
+        const normalizeLoginError = message => {
+          const text = String(message || '').trim();
+          if (!text) return 'เข้าสู่ระบบไม่สำเร็จ กรุณาลองอีกครั้ง';
+          if (/กรอกชื่อผู้ใช้/i.test(text)) return 'กรุณากรอกชื่อผู้ใช้';
+          if (/กรอกรหัสผ่าน/i.test(text)) return 'กรุณากรอกรหัสผ่าน';
+          if (/ไม่พบ.*ผู้ใช้|user.*not.*found|username.*not.*found|รหัสผ่าน.*ไม่ถูก|password.*incorrect|wrong.*password/i.test(text)) return 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง';
+          if (/username.*password|user.*password|ชื่อผู้ใช้.*รหัสผ่าน/i.test(text)) return 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง';
+          return text;
+        };
+        const showInlineLoginError = (message = 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง') => {
+          const form = document.querySelector('.license-card');
+          if (!form || document.querySelector('.app-shell')) return;
+          let error = form.querySelector('.login-error');
+          if (!error) {
+            error = document.createElement('div');
+            error.className = 'login-error np-inline-login-error';
+            error.setAttribute('role', 'alert');
+            const submit = form.querySelector('.license-submit');
+            if (submit) submit.insertAdjacentElement('beforebegin', error);
+            else form.append(error);
+          }
+          error.textContent = normalizeLoginError(message);
+          error.style.display = 'block';
+          error.style.margin = '2px 0 8px';
+          error.style.padding = '11px 13px';
+          error.style.border = '1px solid rgba(255, 95, 120, .42)';
+          error.style.borderRadius = '10px';
+          error.style.background = 'rgba(78, 16, 26, .74)';
+          error.style.color = '#ffb3bd';
+          error.style.fontWeight = '900';
+          error.style.lineHeight = '1.45';
+        };
+        const waitForRerunBridge = () => new Promise(resolve => {
+          if (window.rerun?.licenseLogin) return resolve(window.rerun);
+          const started = Date.now();
+          const timer = window.setInterval(() => {
+            if (window.rerun?.licenseLogin) {
+              window.clearInterval(timer);
+              resolve(window.rerun);
+            } else if (Date.now() - started > 4000) {
+              window.clearInterval(timer);
+              resolve(null);
+            }
+          }, 50);
+        });
+        const installStableLoginSubmit = () => {
+          if (window.__npStableLoginSubmit) return;
+          window.__npStableLoginSubmit = true;
+          document.addEventListener('submit', async event => {
+            const form = event.target;
+            if (!(form instanceof HTMLFormElement) || !form.matches('.license-card')) return;
+            const usernameInput = form.querySelector('#license-username,[name="username"]');
+            const passwordInput = form.querySelector('#license-password,[name="password"]');
+            if (!usernameInput || !passwordInput) return;
+            event.preventDefault();
+            event.stopPropagation();
+            event.stopImmediatePropagation();
+            const submit = form.querySelector('.license-submit');
+            const previousText = submit?.textContent || 'เข้าสู่ระบบ';
+            const username = String(usernameInput.value || '').trim();
+            const password = String(passwordInput.value || '');
+            if (!username) {
+              showInlineLoginError('กรุณากรอกชื่อผู้ใช้');
+              usernameInput.focus();
+              return;
+            }
+            if (!password) {
+              showInlineLoginError('กรุณากรอกรหัสผ่าน');
+              passwordInput.focus();
+              return;
+            }
+            if (submit) {
+              submit.disabled = true;
+              submit.textContent = 'กำลังตรวจสอบ...';
+            }
+            try {
+              const bridge = await waitForRerunBridge();
+              if (!bridge) {
+                showInlineLoginError('ระบบกำลังโหลดข้อมูลเข้าสู่ระบบ กรุณารีเฟรชหน้านี้แล้วลองใหม่');
+                return;
+              }
+              const result = await bridge.licenseLogin({
+                username,
+                password,
+                licenseKey: form.querySelector('#license-key,[name="licenseKey"]')?.value || ''
+              });
+              if (result?.licensed) {
+                setActiveUser(result.username || result.displayName);
+                location.replace(location.pathname + location.search + location.hash);
+                return;
+              }
+              setActiveUser('');
+              showInlineLoginError(result?.error || 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง');
+              passwordInput.focus();
+              passwordInput.select?.();
+            } catch (error) {
+              setActiveUser('');
+              showInlineLoginError(error?.message || 'เข้าสู่ระบบไม่สำเร็จ กรุณาลองอีกครั้ง');
+            } finally {
+              if (submit) {
+                submit.disabled = false;
+                submit.textContent = previousText;
+              }
+            }
+          }, true);
+        };
+        Object.defineProperty(window, '__npSetActiveUsername', { value: setActiveUser, configurable: true });
+        const proxyStorage = {
+          get(target, prop, receiver) {
+            if (prop === 'getItem') return key => {
+              if (key === RAW_KEY) {
+                const user = activeUser();
+                return user ? originalGet(scopedKey(user)) : null;
+              }
+              return originalGet(key);
+            };
+            if (prop === 'setItem') return (key, value) => {
+              if (key === RAW_KEY) {
+                const user = activeUser();
+                if (!user) return;
+                return originalSet(scopedKey(user), value);
+              }
+              return originalSet(key, value);
+            };
+            if (prop === 'removeItem') return key => {
+              if (key === RAW_KEY) {
+                const user = activeUser();
+                if (user) return originalRemove(scopedKey(user));
+                return;
+              }
+              return originalRemove(key);
+            };
+            return Reflect.get(target, prop, receiver);
+          }
+        };
+        try { Object.defineProperty(window, 'localStorage', { value: new Proxy(localStorage, proxyStorage), configurable: true }); } catch {}
+        installStableLoginSubmit();
+        const wrapRerun = () => {
+          if (!window.rerun || window.rerun.__npUserScoped) return Boolean(window.rerun);
+          const base = window.rerun;
+          const reloadClean = reason => {
+            if (window.__npSessionReloading) return;
+            window.__npSessionReloading = true;
+            window.setTimeout(() => {
+              try { sessionStorage.setItem('np.session.switch.reason', reason || 'account'); } catch {}
+              location.replace(location.pathname + location.search + location.hash);
+            }, 80);
+          };
+          const wrapStatus = fn => async (...args) => {
+            const result = await fn(...args);
+            if (result?.licensed) switchToUser(result.username || result.displayName, { reload: true });
+            else setActiveUser('');
+            return result;
+          };
+          const login = base.licenseLogin.bind(base);
+          Object.defineProperty(base, '__npCoreLicenseLogin', { value: login, configurable: true });
+          base.licenseLogin = async (...args) => {
+            let result;
+            try {
+              result = await login(...args);
+            } catch {
+              result = { licensed: false, error: 'เข้าสู่ระบบไม่สำเร็จ กรุณาลองอีกครั้ง' };
+            }
+            if (result?.licensed) {
+              switchToUser(result.username || result.displayName);
+            } else {
+              setActiveUser('');
+              const message = normalizeLoginError(result?.error || 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง');
+              showInlineLoginError(message);
+              window.setTimeout(() => showInlineLoginError(message), 250);
+              window.setTimeout(() => showInlineLoginError(message), 1200);
+            }
+            return result;
+          };
+          base.getLicenseStatus = wrapStatus(base.getLicenseStatus.bind(base));
+          const logout = base.licenseLogout.bind(base);
+          base.licenseLogout = async (...args) => {
+            const result = await logout(...args);
+            setActiveUser('');
+            reloadClean('logout');
+            return result;
+          };
+          Object.defineProperty(base, '__npUserScoped', { value: true });
+          return true;
+        };
+        if (!wrapRerun()) {
+          const timer = setInterval(() => {
+            if (wrapRerun()) clearInterval(timer);
+          }, 20);
+          setTimeout(() => clearInterval(timer), 4000);
+        }
+      })();
+    </script>
+    <script type="module" crossorigin src="./assets/index-DwD7nPvr-live-stable-preview.js?v=20261012-queue-removed"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-CMmojg-P.css?v=20261012-video-layout">
+    <script>
+      (() => {
+        const syncLoginAutofill = () => {
+          const form = document.querySelector('.license-card');
+          if (form) {
+            form.setAttribute('autocomplete', 'on');
+            form.removeAttribute('data-form-type');
+          }
+          const username = document.getElementById('license-username');
+          if (username) {
+            username.setAttribute('name', 'username');
+            username.setAttribute('autocomplete', 'username');
+            username.setAttribute('autocapitalize', 'none');
+            username.setAttribute('spellcheck', 'false');
+            username.removeAttribute('data-lpignore');
+            username.removeAttribute('data-1p-ignore');
+            username.removeAttribute('data-form-type');
+          }
+          const password = document.getElementById('license-password');
+          if (password) {
+            password.setAttribute('name', 'password');
+            password.setAttribute('autocomplete', 'current-password');
+            password.setAttribute('autocapitalize', 'none');
+            password.setAttribute('spellcheck', 'false');
+            password.removeAttribute('data-lpignore');
+            password.removeAttribute('data-1p-ignore');
+            password.removeAttribute('data-form-type');
+          }
+        };
+        document.addEventListener('DOMContentLoaded', () => {
+          syncLoginAutofill();
+          const observer = new MutationObserver(syncLoginAutofill);
+          observer.observe(document.body, { childList: true, subtree: true });
+          window.setTimeout(() => observer.disconnect(), 10000);
+        });
+      })();
+    </script>
+    <style>
+      #root{overflow:auto}
+      label[for="license-key"], .license-field:has(#license-key){display:none!important}
+      @media(max-width:1080px){.dash-hero{flex-direction:column;align-items:stretch}.dash-hero-actions{flex-wrap:wrap}.overlay-layout{grid-template-columns:1fr}.topbar{gap:10px;padding:0 20px}}
+      @media(max-width:650px){.app-shell{min-width:480px}.sidebar{width:180px;flex-basis:180px;padding:20px 10px 14px;overflow-y:auto}.sidebar button{font-size:12px;padding:10px 8px;gap:8px}.brand{padding:5px 4px 22px}.brand strong{font-size:15px}.brand small{font-size:10px}.dashboard{padding:18px 16px 60px}.dash-hero{padding:24px 20px}.dash-hero h1{font-size:24px}.dash-stats{grid-template-columns:1fr}.wizard-footer{left:180px}.workspace-chip{font-size:10px}.topbar{padding:0 12px}}
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+
+  <script src="./np-live-patch.js?v=20261012-preflight-live-step-fix"></script>
+  <script src="/np-announcements.js"></script></body>
+</html>
+
+
+
